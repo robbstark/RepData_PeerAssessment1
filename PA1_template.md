@@ -3,8 +3,10 @@ This file is prepared for the Reproducible Research class in Coursera. It will
 answer the questions on the Assignment 1 and includes everything needed to
 reproduce the results.
 
+*Note: The instructions were not clear about this, but I have decided not to have the script install libraries on other student's systems. This Rmd file calls require() for needed libraries only.  You must manually install any missing libraries (such as gridExtra) to reproduce the results.*
+
 ## Loading and preprocessing the data
-The source file is included in the git repository and should be in the current working directory if the repository is cloned correctly.  I unzipp the data, read it, and convert the date column to the "Date" class.
+The source file is included in the git repository and should be in the current working directory if the repository is cloned correctly.  I unzip the data, read it, and convert the date column to the "Date" class.
 
 
 ```r
@@ -111,7 +113,7 @@ missingNo <- length(missingRows)
 
 There are **2304** missing values in the dataset.
 
-I next plan to fill in the missing values. Aiming to keep it simple, I have decided that the means of the intervals are the best value since we tend to repeat the daily tasks at roughly the same time of the day. I replace each missing step value with the mean of steps for its interval.
+I next plan to fill in the missing values. Aiming to keep it simple, I have decided that the mean of each interval across all days is the best estimator since we tend to repeat the daily tasks at roughly the same time of the day. I replace each missing step value with the mean of steps for its interval.
 
 
 ```r
@@ -144,8 +146,8 @@ Next, I make a plot of the total steps per day again since missing values have b
 
 ```r
 #Aggregate the sum of steps in the new dataset by date
-totalSteps<-aggregate(newAct[1], by=list(Date=newAct$date), FUN=sum, na.rm=T)
-qp<-qplot(totalSteps$Date, totalSteps$steps, geom="histogram", stat="identity")
+totalSteps1<-aggregate(newAct[1], by=list(Date=newAct$date), FUN=sum, na.rm=T)
+qp<-qplot(totalSteps1$Date, totalSteps1$steps, geom="histogram", stat="identity")
 qt<-theme(axis.text.x = element_text(angle = 90, hjust = 1))
 qp+qt+xlab("Date")+ylab("Total Steps per Day")+ggtitle("Total Steps per day (Imputed)")
 ```
@@ -156,18 +158,46 @@ And calculate the mean and median of the new dataset.
 
 
 ```r
-mean2 <- mean(totalSteps$steps)
-median2 <- median(totalSteps$steps)
+mean2 <- mean(totalSteps1$steps)
+median2 <- median(totalSteps1$steps)
 ```
 
 - The NEW **mean** of Total Steps per Day is: **1.0766 &times; 10<sup>4</sup>** 
 - The NEW **median** of Total Steps per Day is: **1.0766 &times; 10<sup>4</sup>**   
 
-As we can see, the numbers are different than the previous findings.  Our mean and median are very close now, indicating that the missing values were acting as outliers, skewing the shape of the distribution of the total steps and causing the median to shift to the left.  This would cause problems with many statistical operations such as regression analysis.
+As we can see, the numbers are different than the previous findings.  Our mean and median are very close now, showing a normal distribution of steps.  The previous finidngs of mean and median indicated that the missing values were acting as outliers, skewing the shape of the distribution of steps and causing the median and the mean (to a lesser degree) to shift to the left.  This would cause problems with both statistical inference and other statistical techniques such as regression and predictive modeling.
+
+The graphs below show the distribution of steps by intervals for each dataset.  The red lines show the mean.  We can easily see how the distribution is much more normal with imputed values.
+
+
+```r
+require(gridExtra)
+```
+
+```
+## Loading required package: gridExtra
+## Loading required package: grid
+```
+
+```r
+#graph of data set with missing values
+g1=ggplot(totalSteps, aes(steps))+ geom_histogram(binwidth=1000)+geom_density()+
+    geom_vline(xintercept=mean(totalSteps$steps), color="red")+
+    ggtitle("Steps with missing values")
+#graph of dataset with imputed values
+g2=ggplot(totalSteps1, aes(steps))+ geom_histogram(binwidth=1000)+geom_density()+
+    geom_vline(xintercept=mean(totalSteps1$steps), color="red")+
+    ggtitle("Steps with imputed values")
+#arrange graphs side by side for easy viewing.
+grid.arrange(g1, g2, ncol=2)
+```
+
+![plot of chunk unnamed-chunk-12](figure/unnamed-chunk-12.png) 
+
 
 ## Are there differences in activity patterns between weekdays and weekends?
 
-In order to explore differences in acticity patterns between weekends and weekdays, I first have to distinguish between them.  I do this by first adding a DoW(day of week) column and set all values to "weekday"", then I use the weekdays function on dates and change the value of DoW to "weekend" for Saturdays and Sundays.  lastly, I make this column to a factor variable.
+In order to explore differences in acticity patterns between weekends and weekdays, I first have to distinguish between them.  I do this by first adding a DoW(day of week) column and set all values to "weekday"", then I use the weekdays function on dates and change the value of DoW to "weekend" for Saturdays and Sundays.  lastly, I change the class of this column to a factor variable.
 
 
 ```r
@@ -187,9 +217,9 @@ totalSteps<-aggregate(newAct[1], by=list(DayType=newAct$DoW, Interval=newAct$int
 qplot(Interval, steps, data=totalSteps, geom="line", facets=DayType~., main="Activity Patterns, Weekends vs. Weekdays")
 ```
 
-![plot of chunk unnamed-chunk-13](figure/unnamed-chunk-13.png) 
+![plot of chunk unnamed-chunk-14](figure/unnamed-chunk-14.png) 
 
-As we can see from the plot, the activity patterns are distinctly different on weekends than weekdays.  On Weekends the activities are more evently distributed whereas on weekdays the number of steps peak at around 8:30AM.  While we don't really know the reason behind this, it could be speculated that the individual who provided this data engages in some physical activity such as jugging on weekday mornings followed by a less active day at the office.  In contrast, he or she enjoys more active weekends without exercising vigorously for a short period of time.
+As we can see from the plot, the activity patterns are distinctly different on weekends than weekdays.  On Weekends the activities are more evently distributed whereas on weekdays the number of steps peak at around 8:35AM.  While we don't really know the reason behind this, it could be speculated that the individual who provided this data engages in some physical activity such as jugging on weekday mornings followed by a less active day at the office.  In contrast, he or she enjoys more active weekends without exercising vigorously for a short period of time.
 
 
 ## End of report
